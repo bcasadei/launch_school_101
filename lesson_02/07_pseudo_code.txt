@@ -1,0 +1,44 @@
+1. a method that returns the sum of two integers
+2. a method that takes an array of strings, and returns a string that is all those strings concatenated together
+3. a method that takes an array of integers, and returns a new array with every other element
+
+--------------------------------------------------------------------------
+
+# 1. a method that returns the sum of two integers
+
+- Get user input for first integer.
+  - Save input to num1 variable and convert to an integer.
+- Get user input for second integer.
+  - Save input to num2 variable and convert to an integer.
+- Define addNum method with parameters for 2 integers.
+  - Add num1 and num2 and store results in results variable
+  - Return results
+
+--------------------------------------------------------------------------
+
+  # 2. a method that takes an array of strings, and returns a string that is all those strings concatenated together
+
+ START 
+
+ SET string_array
+
+ SET string = to joined string_array
+
+--------------------------------------------------------------------------
+
+ # 3. a method that takes an array of integers, and returns a new array with every other element
+
+ START
+
+ SET int_array
+
+ SET i = 0
+ WHILE i < length of int_array, SET i = i + 2
+  SET new_array
+  PUSH i to new_array
+  PRINT new_array
+
+--------------------------------------------------------------------------
+
+
+
