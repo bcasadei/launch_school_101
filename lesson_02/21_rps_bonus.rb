@@ -1,7 +1,14 @@
 # 21_rps_bonus.rb
 
 VALID_CHOICES = %w(r p s l sp).freeze
-p_score = 0
+WINNERS = {
+  'r' => %w(s l),
+  'p' => %w(r sp),
+  's' => %w(p l),
+  'l' => %w(p sp),
+  'sp' => %w(r s)
+}.freeze
+player_score = 0
 cpu_score = 0
 
 def prompt(message)
@@ -9,16 +16,7 @@ def prompt(message)
 end
 
 def win?(first, second)
-  (first == 'r' && second == 's') ||
-    (first == 'p' && second == 'r') ||
-    (first == 's' && second == 'p') ||
-    (first == 'l' && second == 'p') ||
-    (first == 'sp' && second == 's') ||
-    (first == 'r' && second == 'l') ||
-    (first == 'p' && second == 'sp') ||
-    (first == 's' && second == 'l') ||
-    (first == 'l' && second == 'sp') ||
-    (first == 'sp' && second == 'r')
+  WINNERS[first].include?(second)
 end
 
 def display_results(player, computer)
@@ -30,6 +28,12 @@ def display_results(player, computer)
     prompt("It's a tie!")
   end
 end
+
+def clear_screen
+  system('clear') || system('cls')
+end
+
+clear_screen
 
 welcome_prompt = <<-MSG
   ----------------------------------
@@ -59,26 +63,31 @@ loop do # main loop
   computer_choice = VALID_CHOICES.sample
 
   if win?(choice, computer_choice)
-    p_score += 1
+    player_score += 1
   elsif win?(computer_choice, choice)
     cpu_score += 1
   end
 
-  prompt("You chose: #{choice}; Computer chose: #{computer_choice}.")
+  prompt("You chose: #{choice}, Computer chose: #{computer_choice}.")
 
-  if p_score == 5
-    prompt("You won the match! You: #{p_score} Computer: #{cpu_score}.")
+  if player_score == 5
+    prompt("You won the match! You: #{player_score} Computer: #{cpu_score}.")
     break
   elsif cpu_score == 5
-    prompt("The computer won the match! You: #{p_score} Computer: #{cpu_score}.")
+    prompt("The computer won the match! You: #{player_score} Computer: #{cpu_score}.")
     break
   end
 
   display_results(choice, computer_choice)
 
-  prompt("Score: You: #{p_score} Computer: #{cpu_score}. Do you want to keep playing? (Y/N)")
+  prompt("Score: You: #{player_score} Computer: #{cpu_score}. Do you want to keep playing? (Y/N)")
   answer = gets.chomp
+  loop do
+    break if %w(y n Y N).include?(answer)
+    prompt("That's not a valid choice. Please answer (Y/N).")
+    answer = gets.chomp
+  end
   break unless answer.downcase.start_with?('y')
 end # end main loop
 
-prompt("Thank you for playing Rock, Paper, Scissors, Lizard, Spock")
+prompt("Thank you for playing Rock, Paper, Scissors, Lizard, Spock.")
