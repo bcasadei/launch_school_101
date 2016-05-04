@@ -8,6 +8,7 @@ INITIAL_MARKER = ' '.freeze
 PLAYER_MARKER = 'X'.freeze
 COMPUTER_MARKER = 'O'.freeze
 
+current_player = 'Player'
 score = { 'player' => 0, 'computer' => 0 }
 
 def prompt(message)
@@ -45,35 +46,50 @@ def empty_squares(brd)
 end
 
 def reset_score(score)
- score['player'] = 0
- score['computer'] = 0
+  score['player'] = 0
+  score['computer'] = 0
 end
 
 def update_score(winner, score)
   if winner == 'Player'
     score['player'] += 1
   elsif winner == 'Computer'
-    score['computer'] += 1 
+    score['computer'] += 1
   end
   match_winner(score)
 end
 
 def match_winner(score)
   if score['player'] >= 5
-    prompt("You won the match!")
+    prompt('You won the match!')
     reset_score(score)
   elsif score['computer'] >= 5
-    prompt("Computer won the match!")
+    prompt('Computer won the match!')
     reset_score(score)
   else
-    prompt("The first to 5 matches wins - You: #{score['player']}, Computer: #{score['computer']}.")
+    prompt('The first to 5 matches wins')
+    prompt("You: #{score['player']}, Computer: #{score['computer']}.")
   end
 end
 
 def joinor(brd, sep = ' ,', conj = 'or')
   string = empty_squares(brd).join(sep + ' ')
   return string if empty_squares(brd).size <= 1
-  string = string.slice(0..-2) + conj + ' ' + string.slice(-1)
+  string.slice(0..-2) + conj + ' ' + string.slice(-1)
+end
+
+def alternate_player(current_player)
+  # alternate current player variable
+  return 'Computer' if current_player == 'Player'
+  'Player'
+end
+
+def place_piece!(board, current_player)
+  if current_player == 'Player'
+    player_places_piece!(board)
+  else
+    computer_places_piece!(board)
+  end
 end
 
 def player_places_piece!(brd)
@@ -87,8 +103,31 @@ def player_places_piece!(brd)
   brd[square] = PLAYER_MARKER
 end
 
+def find_at_risk_square(line, board, marker)
+  if board.values_at(line[0], line[1], line[2]).count(marker) == 2
+    board.select { |k, v| line.include?(k) && v == INITIAL_MARKER }.keys.first
+  end
+end
+
 def computer_places_piece!(brd)
-  square = empty_squares(brd).sample
+  square = nil
+
+  WINNING_LINES.each do |line|
+    square = find_at_risk_square(line, brd, COMPUTER_MARKER)
+    break if square
+  end
+
+  unless square
+    WINNING_LINES.each do |line|
+      square = find_at_risk_square(line, brd, PLAYER_MARKER)
+      break if square
+    end
+  end
+
+  unless square
+    square = empty_squares(brd).sample
+  end
+
   brd[square] = COMPUTER_MARKER
 end
 
@@ -118,11 +157,8 @@ loop do # match loop
 
   loop do
     display_board(board)
-
-    player_places_piece!(board)
-    break if someone_won?(board) || board_full?(board)
-
-    computer_places_piece!(board)
+    place_piece!(board, current_player)
+    current_player = alternate_player(current_player)
     break if someone_won?(board) || board_full?(board)
   end
 
