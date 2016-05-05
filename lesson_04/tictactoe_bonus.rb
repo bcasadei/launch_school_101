@@ -109,6 +109,7 @@ def find_at_risk_square(line, board, marker)
   end
 end
 
+# rubocop:disable Metrics/MethodLength, IfUnlessModifier
 def computer_places_piece!(brd)
   square = nil
 
@@ -130,6 +131,7 @@ def computer_places_piece!(brd)
 
   brd[square] = COMPUTER_MARKER
 end
+# rubocop:enable Metrics/MethodLength, IfUnlessModifier
 
 def board_full?(brd)
   empty_squares(brd).empty?
