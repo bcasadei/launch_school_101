@@ -1,15 +1,8 @@
-=begin
-1. Initialize deck
-2. Deal cards to player and dealer
-3. Player turn: hit or stay
-  - repeat until bust or "stay"
-4. If player bust, dealer wins.
-5. Dealer turn: hit or stay
-  - repeat until total >= 17
-6. If dealer bust, player wins.
-7. Compare cards and declare winner.
-=end
-# test_ary = [['2', 'Clubs'], ['3', 'Clubs']]
+WINNING_NUMBER = 21
+DEALER_STAYS_ON = 17
+SUITS = %w(Clubs Diamonds Hearts Spades).freeze
+CARDS = %w(2 3 4 5 6 7 8 9 10 Jack Queen King Ace).freeze
+score = { 'player' => 0, 'dealer' => 0 }
 
 require 'pry'
 
@@ -18,16 +11,27 @@ def prompt(message)
 end
 
 def initialize_deck
-  suits = ['Clubs', 'Diamonds', 'Hearts', 'Spades'] * 13
-  cards = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'Jack', 'Queen', 'King', 'Ace'] * 4
-  # for each suit create a nested array with pairs [suit, card]
-  new_deck = cards.zip(suits)
-  new_deck
+  # product returns an array of all combinations of
+  # elements from all arrays [suit, card]
+  CARDS.product(SUITS).shuffle
 end
 
-def display_hand(hand, player)
-  prompt("#{player}: #{hand}") if player == 'Player'
-  prompt("#{player}: #{hand[0]} [Face Down Card] #{hand[2..-1]}") if player == 'Dealer'
+# rubocop:disable Metrics/MethodLength, Metrics/AbcSize
+def total(all_cards)
+  values = all_cards.map { |card| card[0] }
+  sum = 0
+
+  values.each do |value|
+    sum += 11 if value == 'Ace'
+    sum += 10 if value.to_i == 0
+    sum += value.to_i
+  end
+
+  values.select { |value| value == 'Ace' }.count.times do
+    sum -= 10 if sum > WINNING_NUMBER
+  end
+
+  sum
 end
 
 def deal_cards(deck, hand, player)
@@ -37,94 +41,159 @@ def deal_cards(deck, hand, player)
   display_hand(hand, player)
 end
 
-def total_cards(all_cards)
-  sum = 0
-  all_cards.each do |card| 
-    if card[0] == 'Ace' 
-      sum += 11 
-    elsif card[0].to_i == 0
-      sum += 10
-    else
-      sum += card[0].to_i
-    end
-  end
-
-  all_cards.select { |card| card[0] == 'Ace' }.count.times do
-    sum -= 10 if sum > 21
-  end
-
-  sum
-end
-
 def busted?(all_cards)
-  if total_cards(all_cards) > 21
-    return true
-  else 
-    return false
+  total(all_cards) > WINNING_NUMBER
+end
+
+def reset_score(score)
+  score['player'] = 0
+  score['dealer'] = 0
+end
+
+def match_winner(score)
+  if score['player'] >= 5
+    prompt('You won the match!')
+    reset_score(score)
+  elsif score['dealer'] >= 5
+    prompt('Dealer won the match!')
+    reset_score(score)
+  else
+    prompt('The first to 5 matches wins')
+    prompt("You: #{score['player']}, Dealer: #{score['dealer']}.")
   end
 end
 
-def hit(deck, hand, player)
-  hand << deck.sample
-  hand.each { |card| deck.delete card }
-  display_hand(hand, player)
+def score_keeper(player_cards, dealer_cards, score)
+  result = who_won(player_cards, dealer_cards)
+
+  case result
+  when :player_busted
+    score['dealer'] += 1
+  when :dealer_busted
+    score['player'] += 1
+  when :player
+    score['player'] += 1
+  when :dealer
+    score['dealer'] += 1
+  end
+  match_winner(score)
 end
 
-def display_winner(winner)
-  if winner == 'Player'
-    prompt('Congratulations! You won!')
-  elsif winner == 'Dealer'
-    prompt('Dealer wins!')
+def who_won(player_cards, dealer_cards)
+  player_total = total(player_cards)
+  dealer_total = total(dealer_cards)
+
+  if player_total > WINNING_NUMBER
+    :player_busted
+  elsif dealer_total > WINNING_NUMBER
+    :dealer_busted
+  elsif dealer_total < player_total
+    :player
+  elsif dealer_total > player_total
+    :dealer
   else
+    :tie
+  end
+end
+
+def display_winner(player_cards, dealer_cards)
+  result = who_won(player_cards, dealer_cards)
+
+  case result
+  when :player_busted
+    prompt('You busted! Dealer wins!')
+  when :dealer_busted
+    prompt('Dealer busted! You won!')
+  when :player
+    prompt('You won!')
+  when :dealer
+    prompt('Dealer wins!')
+  when :tie
     prompt("It's a tie!")
   end
 end
 
-def who_won(p_cards, d_cards)
-  case
-  when busted?(p_cards)
-    prompt('You Busted!')
-    display_winner('Dealer')
-  when busted?(d_cards)
-    prompt('Dealer Busted!')
-    display_winner('Player')
-  when total_cards(p_cards) > total_cards(d_cards)
-    display_winner('Player')
-  when total_cards(d_cards) > total_cards(p_cards)
-    display_winner('Dealer')
-  else
-    display_winner('Tie')
-  end
+def end_of_hand(player_cards, dealer_cards)
+  prompt("Dealer has #{dealer_cards}, total: #{total(dealer_cards)}")
+  prompt("Player has #{player_cards}, total: #{total(player_cards)}")
+  display_winner(player_cards, dealer_cards)
+end
+
+def play_again?
+  puts '----------------'
+  prompt('Do you want to play again? (y/n)')
+  answer = gets.chomp
+  answer.downcase.start_with?('y')
 end
 
 loop do # main game loop
   system 'clear'
+  prompt("Welcome to #{WINNING_NUMBER}!")
+  deck = initialize_deck
   player_cards = []
   dealer_cards = []
-  player_one = 'Player'
-  dealer = 'Dealer'
-  deck = initialize_deck
-  deal_cards(deck, player_cards, player_one)
-  deal_cards(deck, dealer_cards, dealer)
 
-  loop do
-    break if busted?(player_cards)
-    prompt('Hit or Stay? (H/S)')
-    answer = gets.chomp
-    
-    break if answer.downcase.start_with?('s')
-    hit(deck, player_cards, player_one)
+  # deal
+  2.times do
+    player_cards << deck.pop
+    dealer_cards << deck.pop
   end
 
-  loop do
-    break if busted?(dealer_cards) || busted?(player_cards)
-    break if total_cards(dealer_cards) > 17
-    hit(deck, dealer_cards, dealer)
+  prompt("Dealer has #{dealer_cards[0]} and ???")
+  prompt("You have: #{player_cards[0]} and #{player_cards[1]}, total: #{total(player_cards)}.")
+
+  loop do # player turn
+    player_turn = nil
+
+    loop do
+      prompt('(h)it or (s)tay?')
+      player_turn = gets.chomp.downcase
+
+      break if %w(h s).include?(player_turn)
+      prompt("Please enter 'h' or 's'.")
+    end
+
+    if player_turn == 'h'
+      player_cards << deck.pop
+      prompt('You chose to hit!')
+      prompt("Your cards: #{player_cards}")
+      prompt("Your total: #{total(player_cards)}")
+    end
+    break if player_turn == 's' || busted?(player_cards)
   end
 
-  who_won(player_cards, dealer_cards)
-  prompt('Would you like to play again? (Y/N)')
-  answer = gets.chomp
-  break if answer.downcase.start_with?('n')
+  if busted?(player_cards)
+    end_of_hand(player_cards, dealer_cards)
+    score_keeper(player_cards, dealer_cards, score)
+    play_again? ? next : break
+  else
+    prompt("You stayed at: #{total(player_cards)}")
+  end
+
+  prompt('Dealer turn…')
+
+  loop do # dealer turn
+    dealer_total = total(dealer_cards)
+    break if busted?(dealer_cards) || dealer_total >= DEALER_STAYS_ON
+
+    prompt('Dealer hits!')
+    dealer_cards << deck.pop
+    prompt("Dealer cards are #{dealer_cards}")
+  end
+
+  dealer_total = total(dealer_cards)
+  if busted?(dealer_cards)
+    prompt("Dealer total: #{dealer_total}")
+    end_of_hand(player_cards, dealer_cards)
+    score_keeper(player_cards, dealer_cards, score)
+    play_again? ? next : break
+  else
+    prompt("Dealer stays at #{dealer_total}")
+  end
+
+  end_of_hand(player_cards, dealer_cards)
+  score_keeper(player_cards, dealer_cards, score)
+
+  break unless play_again?
 end
-prompt('Thank you for playing 21!')
+prompt("Thank you for playing #{WINNING_NUMBER}!")
