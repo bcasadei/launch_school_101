@@ -16,19 +16,21 @@ def initialize_deck
 end
 
 def total(all_cards)
-  values = all_cards.map { |card| card[0] }
   sum = 0
 
-  values.each do |value|
-    sum += 11 if value == 'Ace'
-    sum += 10 if value.to_i == 0
-    sum += value.to_i
+  all_cards.map do |value, _|
+    if value == 'Ace'
+      sum += 11
+    elsif value.to_i == 0
+      sum += 10
+    else
+      sum += value.to_i
+    end
   end
 
-  values.select { |value| value == 'Ace' }.count.times do
+  all_cards.select { |value, _| value == 'Ace' }.count.times do
     sum -= 10 if sum > WINNING_NUMBER
   end
-
   sum
 end
 
