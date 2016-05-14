@@ -5,8 +5,6 @@ SUITS = %w(Clubs Diamonds Hearts Spades).freeze
 CARDS = %w(2 3 4 5 6 7 8 9 10 Jack Queen King Ace).freeze
 score = { 'player' => 0, 'dealer' => 0 }
 
-require 'pry'
-
 def prompt(message)
   puts "=> #{message}"
 end
@@ -32,6 +30,21 @@ def total(all_cards)
     sum -= 10 if sum > WINNING_NUMBER
   end
   sum
+end
+
+def format_cards(cards)
+  cards.map { |value, suit| "#{value} of #{suit}" }
+end
+
+def initial_deal(player_cards, dealer_cards, deck)
+  2.times do
+    player_cards << deck.pop
+    dealer_cards << deck.pop
+  end
+
+  prompt("Dealer has: #{format_cards(dealer_cards[0...-1])} and ???")
+  prompt("You have: #{format_cards(player_cards)} " \
+  "total: #{total(player_cards)}.")
 end
 
 def busted?(all_cards)
@@ -103,8 +116,10 @@ def display_winner(player_cards, dealer_cards)
 end
 
 def show_hand(player_cards, dealer_cards)
-  prompt("Dealer has #{dealer_cards}, total: #{total(dealer_cards)}")
-  prompt("Player has #{player_cards}, total: #{total(player_cards)}")
+  prompt("Dealer has #{format_cards(dealer_cards)}, " \
+    "total: #{total(dealer_cards)}")
+  prompt("Player has #{format_cards(player_cards)}, " \
+    "total: #{total(player_cards)}")
   display_winner(player_cards, dealer_cards)
 end
 
@@ -115,22 +130,7 @@ def play_again?
   answer.downcase.start_with?('y')
 end
 
-loop do
-  system 'clear'
-  prompt("Welcome to #{WINNING_NUMBER}!")
-  deck = initialize_deck
-  player_cards = []
-  dealer_cards = []
-
-  2.times do
-    player_cards << deck.pop
-    dealer_cards << deck.pop
-  end
-
-  prompt("Dealer has #{dealer_cards[0]} and ???")
-  prompt("You have: #{player_cards[0]} and " \
-        "#{player_cards[1]}, total: #{total(player_cards)}.")
-
+def player_turn(player_cards, deck)
   loop do
     player_turn = nil
 
@@ -145,11 +145,36 @@ loop do
     if player_turn == 'h'
       player_cards << deck.pop
       prompt('You chose to hit!')
-      prompt("Your cards: #{player_cards}")
+      prompt("Your cards: #{format_cards(player_cards)}")
       prompt("Your total: #{total(player_cards)}")
     end
     break if player_turn == 's' || busted?(player_cards)
   end
+end
+
+def dealer_turn(dealer_cards, deck)
+  prompt('Dealer turn…')
+
+  loop do
+    dealer_total = total(dealer_cards)
+    break if busted?(dealer_cards) || dealer_total >= DEALER_STAYS_ON
+
+    prompt('Dealer hits!')
+    dealer_cards << deck.pop
+    prompt("Dealer cards are #{format_cards(dealer_cards)}")
+  end
+end
+
+loop do
+  system 'clear'
+  prompt("Welcome to #{WINNING_NUMBER}!")
+  deck = initialize_deck
+  player_cards = []
+  dealer_cards = []
+
+  initial_deal(player_cards, dealer_cards, deck)
+
+  player_turn(player_cards, deck)
 
   if busted?(player_cards)
     show_hand(player_cards, dealer_cards)
@@ -159,16 +184,7 @@ loop do
     prompt("You stayed at: #{total(player_cards)}")
   end
 
-  prompt('Dealer turn…')
-
-  loop do
-    dealer_total = total(dealer_cards)
-    break if busted?(dealer_cards) || dealer_total >= DEALER_STAYS_ON
-
-    prompt('Dealer hits!')
-    dealer_cards << deck.pop
-    prompt("Dealer cards are #{dealer_cards}")
-  end
+  dealer_turn(dealer_cards, deck)
 
   dealer_total = total(dealer_cards)
   if busted?(dealer_cards)
@@ -181,6 +197,7 @@ loop do
   end
 
   show_hand(player_cards, dealer_cards)
+
   update_score(player_cards, dealer_cards, score)
 
   break unless play_again?
